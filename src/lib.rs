@@ -18,7 +18,8 @@ use std::cmp::Ordering;
 /// Trait to define evaluators in order to use the algorithm in a flexible way
 pub trait LSTMEvaluator
 {
-	fn evaluate(&self, lstm:&LSTM) -> f64; //returns rating of LSTM (higher is better (you can inverse with -))
+	///evaluate LSTM (USE ONLY RUN)
+	fn evaluate(&self, lstm:&mut LSTM) -> f64; //returns rating of LSTM (higher is better (you can inverse with -))
 }
 
 /// Optimizer class to optimize LSTMs by evolutionary / genetic algorithms
@@ -32,10 +33,10 @@ pub struct Optimizer<T:LSTMEvaluator>
 impl<T:LSTMEvaluator> Optimizer<T>
 {
 	/// Create a new optimizer using the given evaluator for the given neural net
-	pub fn new(evaluator:T, lstm:LSTM) -> Optimizer<T>
+	pub fn new(evaluator:T, mut lstm:LSTM) -> Optimizer<T>
 	{
 		let mut netvec = Vec::new();
-		let rating = evaluator.evaluate(&lstm);
+		let rating = evaluator.evaluate(&mut lstm);
 		netvec.push((lstm, rating));
 		
 		Optimizer { eval: evaluator, nets: netvec }
@@ -77,8 +78,8 @@ impl<T:LSTMEvaluator> Optimizer<T>
 		self.eval = evaluator;
 	}
 	
-	/// Clones the best NN an returns it
-	pub fn get_nn(&mut self) -> LSTM
+	/// Clones the best LSTM an returns it
+	pub fn get_lstm(&mut self) -> LSTM
 	{
 		self.nets[0].0.clone()
 	}
@@ -89,7 +90,7 @@ impl<T:LSTMEvaluator> Optimizer<T>
 		//evaluate
 		for net in &mut self.nets
 		{
-			net.1 = self.eval.evaluate(&net.0);
+			net.1 = self.eval.evaluate(&mut net.0);
 		}
 		//sort and return
 		self.sort_nets();
@@ -105,7 +106,7 @@ impl<T:LSTMEvaluator> Optimizer<T>
 			let eval = &self.eval;
 			self.nets.par_iter_mut().for_each(|net|
 				{
-					net.1 = eval.evaluate(&net.0);
+					net.1 = eval.evaluate(&mut net.0);
 				});
 		}
 		//sort and return
@@ -226,7 +227,7 @@ impl<T:LSTMEvaluator> Optimizer<T>
 	{
 		for net in &mut nets
 		{
-			net.1 = self.eval.evaluate(&net.0);
+			net.1 = self.eval.evaluate(&mut net.0);
 		}
 		self.nets.append(&mut nets);
 	}
@@ -237,7 +238,7 @@ impl<T:LSTMEvaluator> Optimizer<T>
 	{
 		nets.par_iter_mut().for_each(|net|
 			{
-				net.1 = self.eval.evaluate(&net.0);
+				net.1 = self.eval.evaluate(&mut net.0);
 			});
 		self.nets.append(&mut nets);
 	}
